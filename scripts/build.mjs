@@ -85,7 +85,7 @@ const renderItem = (i) => `
         </li>`;
 
 const renderCourse = (c) => `
-    <details class="course" open id="${esc(c.code.toLowerCase())}" data-search="${esc(`${c.code} ${c.title}`.toLowerCase())}">
+    <details class="course" id="${esc(c.code.toLowerCase())}" data-search="${esc(`${c.code} ${c.title}`.toLowerCase())}">
       <summary class="course-head">
         <span class="course-code">${esc(c.code)}</span>
         <h3>${esc(c.title)}</h3>
@@ -104,7 +104,7 @@ const renderCourse = (c) => `
     </details>`;
 
 const renderAssignments = (items) => `
-    <details class="course" open data-search="assignments">
+    <details class="course" data-search="assignments">
       <summary class="course-head">
         <h3>Assignments</h3>
         <span class="course-count">${items.length} ${items.length === 1 ? "file" : "files"}</span>
@@ -137,9 +137,7 @@ const totalFiles = semesters.reduce(
 
 const html = readFileSync(join(ROOT, "src/index.html"), "utf8")
   .replace("{{NAV}}", nav)
-  .replace("{{CONTENT}}", body)
-  .replace("{{TOTAL}}", String(totalFiles))
-  .replace("{{COURSES}}", String(semesters.reduce((n, s) => n + s.courses.length, 0)));
+  .replace("{{CONTENT}}", body);
 
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT);
