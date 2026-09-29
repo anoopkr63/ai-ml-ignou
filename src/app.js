@@ -16,6 +16,7 @@ input.addEventListener("input", () => {
       group.hidden = !group.querySelector(".item:not([hidden])");
     }
     course.hidden = shown === 0;
+    if (q && shown) course.open = true;
     if (shown) any = true;
   }
   for (const sem of document.querySelectorAll(".semester")) {
@@ -43,3 +44,16 @@ document.querySelector(".theme").addEventListener("click", () => {
   root.dataset.theme = dark ? "light" : "dark";
   try { localStorage.setItem("theme", root.dataset.theme); } catch {}
 });
+
+const toggleAll = document.querySelector(".toggle-all");
+const courses = [...document.querySelectorAll(".course")];
+const syncToggle = () => {
+  toggleAll.textContent = courses.some((c) => c.open) ? "Collapse all" : "Expand all";
+};
+
+toggleAll.addEventListener("click", () => {
+  const open = !courses.some((c) => c.open);
+  for (const c of courses) c.open = open;
+  syncToggle();
+});
+document.addEventListener("toggle", syncToggle, true);

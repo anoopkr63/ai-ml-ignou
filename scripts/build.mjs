@@ -71,6 +71,7 @@ const courseTitles = new Map(semesters.flatMap((s) => s.courses.map((c) => [c.co
 
 const pdfIcon = `<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 2.5h6.5L15.5 6.5V17a.5.5 0 0 1-.5.5H5a.5.5 0 0 1-.5-.5V3a.5.5 0 0 1 .5-.5Z" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M11.5 2.5v4h4" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>`;
 const dlIcon = `<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3.5v9m0 0-3.5-3.5M10 12.5l3.5-3.5M4 16h12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const chevron = `<svg class="chevron" viewBox="0 0 20 20" aria-hidden="true"><path d="m6 8 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
 const renderItem = (i) => `
         <li class="item" data-search="${esc(`${i.label} ${i.title}`.toLowerCase())}">
@@ -84,12 +85,13 @@ const renderItem = (i) => `
         </li>`;
 
 const renderCourse = (c) => `
-    <section class="course" id="${esc(c.code.toLowerCase())}" data-search="${esc(`${c.code} ${c.title}`.toLowerCase())}">
-      <header class="course-head">
+    <details class="course" open id="${esc(c.code.toLowerCase())}" data-search="${esc(`${c.code} ${c.title}`.toLowerCase())}">
+      <summary class="course-head">
         <span class="course-code">${esc(c.code)}</span>
         <h3>${esc(c.title)}</h3>
         <span class="course-count">${c.count} ${c.count === 1 ? "file" : "files"}</span>
-      </header>
+        ${chevron}
+      </summary>
       ${c.groups
         .map(
           (g) => `<div class="group">
@@ -99,21 +101,22 @@ const renderCourse = (c) => `
       </div>`,
         )
         .join("\n      ")}
-    </section>`;
+    </details>`;
 
 const renderAssignments = (items) => `
-    <section class="course" data-search="assignments">
-      <header class="course-head">
+    <details class="course" open data-search="assignments">
+      <summary class="course-head">
         <h3>Assignments</h3>
         <span class="course-count">${items.length} ${items.length === 1 ? "file" : "files"}</span>
-      </header>
+        ${chevron}
+      </summary>
       <div class="group">
         <ul>${items
           .map((a) => renderItem({ ...a, label: a.code, title: courseTitles.get(a.code) ?? a.title }))
           .join("")}
         </ul>
       </div>
-    </section>`;
+    </details>`;
 
 const body = semesters
   .map(

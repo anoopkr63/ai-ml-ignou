@@ -111,6 +111,7 @@ svg { width: 18px; height: 18px; flex: none; }
   font-size: 12px;
 }
 
+.tools-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .tabs { display: flex; gap: 20px; overflow-x: auto; }
 .tabs a {
   padding: 8px 0 10px;
@@ -120,6 +121,20 @@ svg { width: 18px; height: 18px; flex: none; }
   white-space: nowrap;
 }
 .tabs a:hover { color: var(--text); border-bottom-color: var(--border); }
+
+.toggle-all {
+  flex: none;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.toggle-all:hover { color: var(--text); background: var(--hover); }
 
 /* Content */
 .summary { color: var(--muted); margin: 24px 0 8px; }
@@ -143,8 +158,16 @@ svg { width: 18px; height: 18px; flex: none; }
   gap: 12px;
   padding: 14px 18px;
   background: var(--surface);
-  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
 }
+.course-head::-webkit-details-marker { display: none; }
+.course-head:hover .chevron { color: var(--text); }
+.course-head:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.course[open] > .course-head { border-bottom: 1px solid var(--border); }
+.chevron { align-self: center; color: var(--muted); transition: transform 0.15s ease; }
+.course:not([open]) .chevron { transform: rotate(-90deg); }
 .course-head h3 { flex: 1; margin: 0; font-size: 16px; }
 .course-code {
   color: var(--accent);
@@ -229,6 +252,7 @@ td a:hover { text-decoration: underline; }
   .search kbd { display: none; }
   .course-head { flex-wrap: wrap; gap: 4px 10px; padding: 12px 14px; }
   .course-head h3 { flex-basis: 100%; order: 2; }
+  .chevron { margin-left: auto; }
   .group h4 { padding: 12px 14px 4px; }
   .group ul { padding: 2px 4px 6px; }
   .item-label { width: auto; }
