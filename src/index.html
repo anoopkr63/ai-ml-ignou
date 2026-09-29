@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MSc AI &amp; ML Study Materials · IGNOU</title>
+  <meta name="description" content="IGNOU MSc (Artificial Intelligence and Machine Learning) course blocks, lab manuals and assignments.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%231d4ed8'/><path d='M9 8h10l4 4v12H9z' fill='none' stroke='white' stroke-width='2'/></svg>">
+  <link rel="stylesheet" href="/style.css">
+  <script>try{const t=localStorage.getItem("theme");if(t)document.documentElement.dataset.theme=t}catch{}</script>
+</head>
+<body>
+  <header class="top">
+    <div class="wrap top-inner">
+      <a class="brand" href="/">
+        <strong>MSc AI &amp; ML</strong>
+        <span>IGNOU study materials</span>
+      </a>
+      <button class="theme" type="button" aria-label="Toggle dark mode">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M16 12.5A6.5 6.5 0 0 1 7.5 4a6.5 6.5 0 1 0 8.5 8.5Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+    <div class="wrap tools">
+      <label class="search">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="9" cy="9" r="5.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="m13 13 4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <input type="search" placeholder="Search units, courses or codes" aria-label="Search materials" autocomplete="off">
+        <kbd>/</kbd>
+      </label>
+      <nav class="tabs">{{NAV}}</nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <p class="summary">{{COURSES}} courses · {{TOTAL}} PDFs. Click a unit to read it in the browser, or use the arrow to download.</p>
+    {{CONTENT}}
+    <p class="empty" hidden>Nothing matches your search.</p>
+  </main>
+
+  <footer class="wrap foot">Course material © IGNOU. Shared for study purposes.</footer>
+  <script src="/app.js" defer></script>
+</body>
+</html>

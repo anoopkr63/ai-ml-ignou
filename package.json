@@ -1,0 +1,9 @@
+{
+  "name": "ignou-mscaiml",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "bun scripts/build.mjs",
+    "dev": "bun scripts/build.mjs && bunx serve dist"
+  }
+}
