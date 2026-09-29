@@ -67,6 +67,23 @@ svg { width: 18px; height: 18px; flex: none; }
 .brand strong { font-size: 18px; letter-spacing: -0.01em; }
 .brand span { color: var(--muted); font-size: 14px; }
 
+.actions { display: flex; align-items: center; gap: 8px; }
+
+.contribute {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 500;
+}
+.contribute svg { width: 16px; height: 16px; }
+.contribute:hover { color: var(--text); background: var(--hover); }
+
 .theme {
   display: grid;
   place-items: center;
@@ -244,6 +261,9 @@ td a:hover { text-decoration: underline; }
 .empty { padding: 48px 0; text-align: center; color: var(--muted); }
 
 .foot { padding-top: 32px; padding-bottom: 40px; color: var(--muted); font-size: 13px; }
+.foot p { margin: 0 0 6px; }
+.foot a { color: var(--accent); }
+.foot a:hover { text-decoration: underline; }
 
 @media (max-width: 600px) {
   .wrap { padding: 0 16px; }
