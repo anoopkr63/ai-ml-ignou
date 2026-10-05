@@ -71,7 +71,9 @@ function start() {
       fill(phase.querySelector(".phase-bar"), inner.filter((b) => b.checked).length, inner.length);
       for (const day of phase.querySelectorAll(".day")) {
         const own = [...day.querySelectorAll(".task input")];
-        day.classList.toggle("day-done", own.every((b) => b.checked));
+        const hit = own.filter((b) => b.checked).length;
+        day.querySelector(".day-count").textContent = `${hit} / ${own.length}`;
+        day.classList.toggle("day-done", hit === own.length);
       }
       for (const week of phase.querySelectorAll(".week")) {
         const own = [...week.querySelectorAll(".task input")];
@@ -111,13 +113,26 @@ function start() {
   if (current) {
     current.classList.add("today");
     current.querySelector(".day-when").insertAdjacentHTML("afterend", '<span class="today-flag">Today</span>');
+    // Everything ships collapsed, so today is the one branch opened for you.
+    for (const el of [current, current.closest(".week"), current.closest(".phase")]) if (el) el.open = true;
     const week = current.closest(".week");
-    if (week) {
-      week.open = true;
-      week.querySelector(".week-label").insertAdjacentHTML("afterend", '<span class="week-now">This week</span>');
-    }
+    if (week) week.querySelector(".week-label").insertAdjacentHTML("afterend", '<span class="week-now">This week</span>');
     if (!location.hash) current.scrollIntoView({ block: "center" });
   }
+
+  // One control for the whole timeline: phases, weeks and days together.
+  const groups = [...vault.querySelectorAll(".phase, .week, .day")];
+  const expand = vault.querySelector(".expand");
+  const syncExpand = () => {
+    expand.textContent = groups.some((g) => g.open) ? "Collapse all" : "Expand all";
+  };
+  expand.addEventListener("click", () => {
+    const open = !groups.some((g) => g.open);
+    for (const g of groups) g.open = open;
+    syncExpand();
+  });
+  vault.addEventListener("toggle", syncExpand, true);
+  syncExpand();
 
   const reset = vault.querySelector(".reset");
   let arming = 0;
