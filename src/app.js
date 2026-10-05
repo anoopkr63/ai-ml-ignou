@@ -29,20 +29,14 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "/" && document.activeElement !== input) {
     e.preventDefault();
     input.focus();
+  } else if (e.key === "p" && document.activeElement !== input && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    const plan = document.querySelector(".plan-key");
+    if (plan) location.href = plan.href;
   } else if (e.key === "Escape" && document.activeElement === input) {
     input.value = "";
     input.dispatchEvent(new Event("input"));
     input.blur();
   }
-});
-
-document.querySelector(".theme").addEventListener("click", () => {
-  const root = document.documentElement;
-  const dark = root.dataset.theme
-    ? root.dataset.theme === "dark"
-    : matchMedia("(prefers-color-scheme: dark)").matches;
-  root.dataset.theme = dark ? "light" : "dark";
-  try { localStorage.setItem("theme", root.dataset.theme); } catch {}
 });
 
 const toggleAll = document.querySelector(".toggle-all");

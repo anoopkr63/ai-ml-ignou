@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "bun scripts/build.mjs",
-    "dev": "bun scripts/build.mjs && bunx serve dist"
+    "dev": "bun scripts/build.mjs && bunx serve dist",
+    "seal": "bun scripts/seal.mjs"
   }
 }

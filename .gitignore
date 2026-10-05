@@ -2,3 +2,6 @@ dist
 node_modules
 .vercel
 Semester-*/Assignments/Solutions/
+
+# Plaintext study plan. Only the sealed ciphertext is committed.
+scripts/plan-data.mjs
