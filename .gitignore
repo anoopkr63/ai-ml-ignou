@@ -5,3 +5,9 @@ Semester-*/Assignments/Solutions/
 
 # Plaintext study plan. Only the sealed ciphertext is committed.
 scripts/plan-data.mjs
+
+# Scratch notes, not part of the site.
+docs/
+
+# Not IGNOU course material.
+Study Guides/Ethical Hacking/

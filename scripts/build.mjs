@@ -85,6 +85,41 @@ function readAssignments(semDir) {
     .map((f) => ({ ...toItem([semDir, "Assignments", f]), code: f.split(" ")[0] }));
 }
 
+const GUIDES = "Study Guides";
+
+// Bilingual study guides, one per block, keyed by course code for the plan page.
+// Only the semester folders are read; anything else under Study Guides is not
+// course material and stays out of the site.
+function readGuides() {
+  const byCourse = new Map();
+  if (!existsSync(join(ROOT, GUIDES))) return byCourse;
+  for (const sem of list(join(ROOT, GUIDES)).filter((d) => /^Semester-/.test(d) && isDir(join(ROOT, GUIDES, d)))) {
+    for (const course of list(join(ROOT, GUIDES, sem)).filter((d) => isDir(join(ROOT, GUIDES, sem, d)))) {
+      const items = list(join(ROOT, GUIDES, sem, course))
+        .filter((f) => f.toLowerCase().endsWith(".pdf"))
+        .map((f) => {
+          const parts = [GUIDES, sem, course, f];
+          const name = f.replace(/\.pdf$/i, "").replace(/\s*-\s*Study Guide.*$/i, "");
+          const b = name.match(/^Block-(\d+)/);
+          return {
+            block: b ? +b[1] : null,
+            title: name,
+            href: href(parts),
+            size: formatSize(statSync(join(ROOT, ...parts)).size),
+          };
+        });
+      if (items.length) {
+        byCourse.set(course.split(" ")[0], items);
+        guideDirs.add(sem);
+      }
+    }
+  }
+  return byCourse;
+}
+
+const guideDirs = new Set();
+const guides = readGuides();
+
 const semesters = list(ROOT)
   .filter((d) => /^Semester-/.test(d) && isDir(join(ROOT, d)))
   .map((d) => {
@@ -254,6 +289,14 @@ const renderExams = () => `
       <p class="plan-note">Verify against your hall ticket — the September release is marked tentative. Confirm the exam form is submitted; the portal opened on 10 September.</p>
     </section>`;
 
+const renderBlockRow = ([name, pp], i, courseGuides) => {
+  const guide = courseGuides.find((g) => g.block === i + 1);
+  const label = guide
+    ? `<a href="${guide.href}" target="_blank" rel="noopener" title="Study guide · ${esc(guide.title)} · ${guide.size}">${esc(name)}</a>`
+    : `<span>${esc(name)}</span>`;
+  return `<li>${label}<span class="pp">${esc(pp)}</span></li>`;
+};
+
 const renderCourseGuide = (c) => `
       <details class="course">
         <summary class="course-head">
@@ -268,9 +311,9 @@ const renderCourseGuide = (c) => `
             .map(([head, rest]) => `<li><strong>${esc(head)}</strong> — ${esc(rest)}</li>`)
             .join("")}
           </ol>
-          <h4>Block map</h4>
+          <h4>Block map${guides.has(c.code) ? " — each block links to its bilingual study guide" : ""}</h4>
           <ul class="blockmap">${c.blockMap
-            .map(([name, pp]) => `<li><span>${esc(name)}</span><span class="pp">${esc(pp)}</span></li>`)
+            .map((row, i) => renderBlockRow(row, i, guides.get(c.code) ?? []))
             .join("")}
           </ul>
           <h4>How to study it</h4>
@@ -381,11 +424,15 @@ cpSync(join(ROOT, "src/reader.js"), join(OUT, "reader.js"));
 for (const s of semesters) {
   cpSync(join(ROOT, s.dir), join(OUT, s.dir), { recursive: true, filter: (src) => !/[\\/]Solutions$/.test(src) });
 }
+if (planHtml) {
+  for (const d of guideDirs) cpSync(join(ROOT, GUIDES, d), join(OUT, GUIDES, d), { recursive: true });
+}
 
 const planTasks = (plan?.phases ?? []).reduce((n, p) => n + p.blocks.reduce((m, b) => m + b.tasks.length, 0), 0);
+const guideFiles = [...guides.values()].reduce((n, g) => n + g.length, 0);
 
 console.log(
   planHtml
-    ? `Built ${totalFiles} files across ${semesters.length} semesters, plus an encrypted study plan of ${planTasks} tasks, into dist/`
+    ? `Built ${totalFiles} files across ${semesters.length} semesters, plus an encrypted study plan of ${planTasks} tasks linking ${guideFiles} study guides, into dist/`
     : `Built ${totalFiles} files across ${semesters.length} semesters into dist/. PLAN_PASSPHRASE is not set, so the study plan was NOT built.`,
 );

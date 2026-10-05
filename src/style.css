@@ -472,6 +472,12 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outlin
   border-bottom: 1px solid var(--border);
 }
 .blockmap li:last-child, .freq li:last-child { border-bottom: 0; }
+.blockmap a {
+  color: var(--text);
+  text-decoration: none;
+  border-bottom: 1px solid var(--border);
+}
+.blockmap a:hover { color: var(--accent); border-bottom-color: currentColor; }
 .pp, .freq-n {
   flex: none;
   color: var(--muted);
