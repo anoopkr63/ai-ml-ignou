@@ -265,7 +265,6 @@ const renderPhase = (p) => `
         </div>
         ${chevron}
       </summary>
-      <p class="phase-intro">${esc(p.intro)}</p>
       ${groupWeeks(p.blocks).map(renderWeek).join("")}
     </details>`;
 
@@ -289,16 +288,7 @@ const renderExams = () => `
           </tbody>
         </table>
       </div>
-      <p class="plan-note">The September release is tentative — verify against your hall ticket, and confirm your exam form is in.</p>
     </section>`;
-
-const renderBlockRow = ([name, pp], i, courseGuides) => {
-  const guide = courseGuides.find((g) => g.block === i + 1);
-  const label = guide
-    ? `<a href="${guide.href}" target="_blank" rel="noopener" title="Study guide · ${esc(guide.title)} · ${guide.size}">${esc(name)}</a>`
-    : `<span>${esc(name)}</span>`;
-  return `<li>${label}<span class="pp">${esc(pp)}</span></li>`;
-};
 
 const renderCourseGuide = (c) => `
       <details class="course">
@@ -314,13 +304,34 @@ const renderCourseGuide = (c) => `
             .map(([head, rest]) => `<li><strong>${esc(head)}</strong> — ${esc(rest)}</li>`)
             .join("")}
           </ol>
-          <h4>Block map${guides.has(c.code) ? " — linked to the study guides" : ""}</h4>
+          <h4>Block map</h4>
           <ul class="blockmap">${c.blockMap
-            .map((row, i) => renderBlockRow(row, i, guides.get(c.code) ?? []))
+            .map(([name, pp]) => `<li><span>${esc(name)}</span><span class="pp">${esc(pp)}</span></li>`)
             .join("")}
           </ul>
-          <h4>How to study it</h4>
-          <p>${esc(c.method)}</p>
+        </div>
+      </details>`;
+
+const renderGuideCourse = ([code, items]) => `
+      <details class="course">
+        <summary class="course-head">
+          <span class="course-code">${esc(code)}</span>
+          <h3>${esc(courseTitles.get(code) ?? "")}</h3>
+          <span class="course-count">${items.length} ${items.length === 1 ? "guide" : "guides"}</span>
+          ${chevron}
+        </summary>
+        <div class="group">
+          <ul>${items
+            .map((g) =>
+              renderItem({
+                href: g.href,
+                size: g.size,
+                label: g.block ? `Block ${g.block}` : "",
+                title: g.title.replace(/^Block-\d+\s+/, ""),
+              }),
+            )
+            .join("")}
+          </ul>
         </div>
       </details>`;
 
@@ -345,7 +356,6 @@ const planBody = !plan
   : `
     <section class="plan-intro">
       <h1>Semester-I study plan</h1>
-      <p class="plan-lede">Four theory papers from 25 November to 8 December 2026, two practicals after. Fifty-one days, built for 90 minutes on weekdays and about four hours each weekend day.</p>
       <div class="overall bar">
         <span class="bar-label">Overall</span>
         <span class="bar-track"><span class="bar-fill"></span></span>
@@ -356,24 +366,21 @@ const planBody = !plan
     </section>
 ${renderExams()}
 ${plan.phases.map(renderPhase).join("\n")}
+${
+      guides.size
+        ? `    <section class="plan-block" id="guides">
+      <h2>Study guides</h2>
+${[...guides].map(renderGuideCourse).join("\n")}
+    </section>`
+        : ""
+    }
     <section class="plan-block" id="courses">
       <h2>What to study, and what to skim</h2>
-      <p class="plan-note">Roughly 1,210 pages across the four theory courses — too many to read linearly at this pace, and attempting it is the main way people fail. The bilingual guides are the primary read; the block PDFs are reference.</p>
 ${plan.courses.map(renderCourseGuide).join("\n")}
     </section>
     <section class="plan-block" id="papers">
       <h2>Past papers</h2>
-      ${plan.pyqIntro.map((t) => `<p class="plan-note">${esc(t)}</p>`).join("")}
 ${plan.pyq.map(renderPyq).join("\n")}
-    </section>
-    <section class="plan-block" id="method">
-      <h2>How to spend 90 minutes</h2>
-      <ul class="routine">${plan.routine
-        .map(([t, what]) => `<li><span class="slot-time">${esc(t)}</span><span>${esc(what)}</span></li>`)
-        .join("")}
-      </ul>
-      <ul class="rules">${plan.rules.map((r) => `<li>${esc(r)}</li>`).join("")}
-      </ul>
     </section>
     <section class="plan-block" id="sources">
       <h2>Sources</h2>
