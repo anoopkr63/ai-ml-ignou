@@ -223,15 +223,17 @@ const renderTask = (t) => `
             </li>`;
 
 const renderDay = (b) => `
-        <div class="day${b.exam ? " day-exam" : ""}" data-start="${b.start}" data-end="${b.end}">
-          <div class="day-head">
+        <details class="day${b.exam ? " day-exam" : ""}" data-start="${b.start}" data-end="${b.end}">
+          <summary class="day-head">
             <span class="day-when">${esc(b.label)}</span>
             <span class="day-what">${esc(b.dates)}</span>
-          </div>
+            <span class="day-count"></span>
+            ${chevron}
+          </summary>
           ${b.goal ? `<p class="day-goal">${esc(b.goal)}</p>` : ""}
           <ul class="tasks">${b.tasks.map(renderTask).join("")}
           </ul>
-        </div>`;
+        </details>`;
 
 const groupWeeks = (blocks) => {
   const weeks = [];
@@ -253,18 +255,19 @@ const renderWeek = (w) => `
       </details>`;
 
 const renderPhase = (p) => `
-    <section class="phase" id="${esc(p.id)}">
-      <div class="phase-head">
+    <details class="phase" id="${esc(p.id)}">
+      <summary class="phase-head">
         <h2>${esc(p.name)}</h2>
         <span class="phase-range">${esc(p.range)}</span>
         <div class="phase-bar bar">
           <span class="bar-track"><span class="bar-fill"></span></span>
           <span class="bar-count"></span>
         </div>
-      </div>
+        ${chevron}
+      </summary>
       <p class="phase-intro">${esc(p.intro)}</p>
       ${groupWeeks(p.blocks).map(renderWeek).join("")}
-    </section>`;
+    </details>`;
 
 const renderExams = () => `
     <section class="plan-block" id="calendar">
@@ -286,7 +289,7 @@ const renderExams = () => `
           </tbody>
         </table>
       </div>
-      <p class="plan-note">Verify against your hall ticket — the September release is marked tentative. Confirm the exam form is submitted; the portal opened on 10 September.</p>
+      <p class="plan-note">The September release is tentative — verify against your hall ticket, and confirm your exam form is in.</p>
     </section>`;
 
 const renderBlockRow = ([name, pp], i, courseGuides) => {
@@ -311,7 +314,7 @@ const renderCourseGuide = (c) => `
             .map(([head, rest]) => `<li><strong>${esc(head)}</strong> — ${esc(rest)}</li>`)
             .join("")}
           </ol>
-          <h4>Block map${guides.has(c.code) ? " — each block links to its bilingual study guide" : ""}</h4>
+          <h4>Block map${guides.has(c.code) ? " — linked to the study guides" : ""}</h4>
           <ul class="blockmap">${c.blockMap
             .map((row, i) => renderBlockRow(row, i, guides.get(c.code) ?? []))
             .join("")}
@@ -342,19 +345,20 @@ const planBody = !plan
   : `
     <section class="plan-intro">
       <h1>Semester-I study plan</h1>
-      <p class="plan-lede">Four theory papers between 25 November and 8 December 2026, and two practicals after that. Fifty-one days of study, built for one to two hours on weekdays and longer sessions at the weekend.</p>
+      <p class="plan-lede">Four theory papers from 25 November to 8 December 2026, two practicals after. Fifty-one days, built for 90 minutes on weekdays and about four hours each weekend day.</p>
       <div class="overall bar">
         <span class="bar-label">Overall</span>
         <span class="bar-track"><span class="bar-fill"></span></span>
         <span class="bar-count"></span>
-        <button class="reset toggle-all" type="button">Reset progress</button>
+        <button class="toggle-all expand" type="button">Expand all</button>
+        <button class="toggle-all reset" type="button">Reset progress</button>
       </div>
     </section>
 ${renderExams()}
 ${plan.phases.map(renderPhase).join("\n")}
     <section class="plan-block" id="courses">
       <h2>What to study, and what to skim</h2>
-      <p class="plan-note">Roughly 1,210 pages across the four theory courses. Reading them linearly at this pace is not possible, and attempting it is the main way people fail these papers. The bilingual study guides are the primary read; block PDFs are reference.</p>
+      <p class="plan-note">Roughly 1,210 pages across the four theory courses — too many to read linearly at this pace, and attempting it is the main way people fail. The bilingual guides are the primary read; the block PDFs are reference.</p>
 ${plan.courses.map(renderCourseGuide).join("\n")}
     </section>
     <section class="plan-block" id="papers">
