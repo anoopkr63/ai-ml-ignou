@@ -1,5 +1,7 @@
 const PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174";
 const MAX_WIDTH = 1100;
+const MIN_ZOOM = 0.5;
+const MAX_ZOOM = 4;
 
 const overlay = document.querySelector(".reader");
 const stage = overlay.querySelector(".reader-stage");
@@ -12,7 +14,9 @@ const closeEl = overlay.querySelector(".reader-close");
 
 let libPromise = null;
 let doc = null;
+let sheet = null;
 let pages = [];
+let pad = 32;
 let zoom = 1;
 let token = 0;
 let lastFocus = null;
@@ -37,14 +41,25 @@ function loadLib() {
   return libPromise;
 }
 
-const cssWidth = () => Math.min(stage.clientWidth - 32, MAX_WIDTH) * zoom;
+const cssWidth = () => Math.min(stage.clientWidth - pad, MAX_WIDTH) * zoom;
 
-function layout() {
+// Keeping the canvases lets a zoom stretch the existing bitmap, so the page
+// tracks the fingers; refresh() redraws them sharp once the gesture ends.
+function layout(keep) {
   const w = cssWidth();
   for (const p of pages) {
     p.wrap.style.width = `${w}px`;
     p.wrap.style.height = `${(p.base.height / p.base.width) * w}px`;
+    if (!keep) discard(p);
+  }
+}
+
+function refresh() {
+  if (!observer) return;
+  for (const p of pages) {
     discard(p);
+    observer.unobserve(p.wrap);
+    observer.observe(p.wrap);
   }
 }
 
@@ -109,6 +124,10 @@ async function open(url, title) {
   dlEl.href = url;
   countEl.textContent = "";
   stage.innerHTML = "";
+  sheet = document.createElement("div");
+  sheet.className = "reader-doc";
+  stage.append(sheet);
+  pad = parseFloat(getComputedStyle(sheet).paddingLeft) * 2 || 0;
   pages = [];
   zoom = 1;
   statusEl.textContent = "Loading…";
@@ -139,7 +158,7 @@ async function open(url, title) {
   for (let n = 1; n <= doc.numPages; n++) {
     const wrap = document.createElement("div");
     wrap.className = "reader-pg";
-    stage.append(wrap);
+    sheet.append(wrap);
     pages.push({ number: n, wrap, base: { width: v.width, height: v.height }, canvas: null, task: null });
   }
 
@@ -167,6 +186,7 @@ function close() {
   observer = null;
   for (const p of pages) discard(p);
   pages = [];
+  sheet = null;
   doc?.destroy();
   doc = null;
   stage.innerHTML = "";
@@ -175,17 +195,23 @@ function close() {
   lastFocus?.focus();
 }
 
-function setZoom(next) {
-  zoom = Math.min(3, Math.max(0.5, next));
-  const anchor = pages.find((p) => p.wrap.offsetTop + p.wrap.offsetHeight > stage.scrollTop);
-  layout();
-  if (anchor) stage.scrollTop = anchor.wrap.offsetTop;
-  if (observer) {
-    for (const p of pages) {
-      observer.unobserve(p.wrap);
-      observer.observe(p.wrap);
-    }
-  }
+// fx/fy are the point in the stage that should stay put, defaulting to its centre.
+function setZoom(next, fx, fy) {
+  const was = zoom;
+  zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, next));
+  if (zoom === was || !pages.length) return;
+  const ratio = zoom / was;
+  const x = fx ?? stage.clientWidth / 2;
+  const y = fy ?? stage.clientHeight / 2;
+  layout(true);
+  stage.scrollLeft = (stage.scrollLeft + x) * ratio - x;
+  stage.scrollTop = (stage.scrollTop + y) * ratio - y;
+  trackPage();
+}
+
+function step(by) {
+  setZoom(zoom + by);
+  refresh();
 }
 
 document.addEventListener("click", (e) => {
@@ -196,16 +222,97 @@ document.addEventListener("click", (e) => {
 });
 
 closeEl.addEventListener("click", close);
-overlay.querySelector(".reader-in").addEventListener("click", () => setZoom(zoom + 0.25));
-overlay.querySelector(".reader-out").addEventListener("click", () => setZoom(zoom - 0.25));
+overlay.querySelector(".reader-in").addEventListener("click", () => step(0.25));
+overlay.querySelector(".reader-out").addEventListener("click", () => step(-0.25));
 overlay.addEventListener("click", (e) => {
   if (e.target === overlay) close();
 });
 stage.addEventListener("scroll", trackPage, { passive: true });
+
+let lastWidth = 0;
 window.addEventListener("resize", () => {
-  if (!overlay.hidden && pages.length) layout();
+  if (overlay.hidden || !pages.length || stage.clientWidth === lastWidth) return;
+  lastWidth = stage.clientWidth;
+  layout();
+  refresh();
 });
+
 document.addEventListener("keydown", (e) => {
   if (overlay.hidden) return;
   if (e.key === "Escape") close();
 });
+
+/* Touch zoom. The overlay is fixed with the body locked, so the browser's own
+   pinch only blows up the chrome and leaves no way to pan — we take it over. */
+
+let pinch = null;
+let tapped = 0;
+
+const spread = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+const midpoint = (t) => {
+  const r = stage.getBoundingClientRect();
+  return { x: (t[0].clientX + t[1].clientX) / 2 - r.left, y: (t[0].clientY + t[1].clientY) / 2 - r.top };
+};
+
+stage.addEventListener(
+  "touchstart",
+  (e) => {
+    if (e.touches.length !== 2 || !pages.length) return;
+    const t = [e.touches[0], e.touches[1]];
+    pinch = { gap: spread(t), from: zoom, next: zoom, frame: 0, ...midpoint(t) };
+  },
+  { passive: true },
+);
+
+stage.addEventListener(
+  "touchmove",
+  (e) => {
+    if (!pinch || e.touches.length !== 2) return;
+    e.preventDefault();
+    pinch.next = pinch.from * (spread([e.touches[0], e.touches[1]]) / pinch.gap);
+    if (pinch.frame) return;
+    pinch.frame = requestAnimationFrame(() => {
+      if (!pinch) return;
+      pinch.frame = 0;
+      setZoom(pinch.next, pinch.x, pinch.y);
+    });
+  },
+  { passive: false },
+);
+
+function endPinch() {
+  if (!pinch) return;
+  if (pinch.frame) cancelAnimationFrame(pinch.frame);
+  pinch = null;
+  refresh();
+}
+
+stage.addEventListener(
+  "touchend",
+  (e) => {
+    if (pinch) {
+      if (e.touches.length < 2) endPinch();
+      return;
+    }
+    if (e.touches.length || e.changedTouches.length !== 1 || !pages.length) return;
+    const now = Date.now();
+    if (now - tapped > 300) {
+      tapped = now;
+      return;
+    }
+    tapped = 0;
+    e.preventDefault();
+    const r = stage.getBoundingClientRect();
+    const t = e.changedTouches[0];
+    setZoom(zoom > 1.01 ? 1 : 2, t.clientX - r.left, t.clientY - r.top);
+    refresh();
+  },
+  { passive: false },
+);
+
+stage.addEventListener("touchcancel", endPinch);
+
+// Safari ignores touch-action for zoom; these are what stop it there.
+for (const type of ["gesturestart", "gesturechange", "gestureend"]) {
+  overlay.addEventListener(type, (e) => e.preventDefault());
+}
