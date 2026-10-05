@@ -45,10 +45,35 @@
     <p class="empty" hidden>Nothing matches your search.</p>
   </main>
 
+  <div class="reader" hidden role="dialog" aria-modal="true" aria-label="Document reader">
+    <div class="reader-bar">
+      <span class="reader-title"></span>
+      <span class="reader-count"></span>
+      <button class="reader-out reader-btn" type="button" aria-label="Zoom out">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 10h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+      <button class="reader-in reader-btn" type="button" aria-label="Zoom in">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 10h10M10 5v10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+      <a class="reader-tab reader-btn" target="_blank" rel="noopener" title="Open in a new tab" aria-label="Open in a new tab">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M11 4h5v5M16 4l-7 7M15 12v3.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5H8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+      <a class="reader-dl reader-btn" download title="Download" aria-label="Download">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3.5v9m0 0-3.5-3.5M10 12.5l3.5-3.5M4 16h12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+      <button class="reader-close reader-btn" type="button" aria-label="Close reader">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5.5 5.5 9 9m0-9-9 9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <p class="reader-status" hidden></p>
+    <div class="reader-stage"></div>
+  </div>
+
   <footer class="wrap foot">
     <a href="https://github.com/anoopkr63/ai-ml-ignou/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">Suggest a change</a> · <a href="https://github.com/anoopkr63/ai-ml-ignou/issues/new" target="_blank" rel="noopener">Report a problem</a> · Course material © IGNOU
   </footer>
   <script src="/theme.js" defer></script>
   <script src="/app.js" defer></script>
+  <script src="/reader.js" defer></script>
 </body>
 </html>

@@ -106,7 +106,7 @@ const chevron = `<svg class="chevron" viewBox="0 0 20 20" aria-hidden="true"><pa
 
 const renderItem = (i) => `
         <li class="item" data-search="${esc(`${i.label} ${i.title}`.toLowerCase())}">
-          <a class="item-link" href="${i.href}" target="_blank" rel="noopener">
+          <a class="item-link" href="${i.href}" target="_blank" rel="noopener" title="Read ${esc(i.title)}">
             ${pdfIcon}
             ${i.label ? `<span class="item-label">${esc(i.label)}</span>` : ""}
             <span class="item-title">${esc(i.title)}</span>
@@ -377,6 +377,7 @@ if (planHtml) {
 cpSync(join(ROOT, "src/style.css"), join(OUT, "style.css"));
 cpSync(join(ROOT, "src/app.js"), join(OUT, "app.js"));
 cpSync(join(ROOT, "src/theme.js"), join(OUT, "theme.js"));
+cpSync(join(ROOT, "src/reader.js"), join(OUT, "reader.js"));
 for (const s of semesters) {
   cpSync(join(ROOT, s.dir), join(OUT, s.dir), { recursive: true, filter: (src) => !/[\\/]Solutions$/.test(src) });
 }

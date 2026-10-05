@@ -502,6 +502,87 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outlin
 .rules a { color: var(--accent); }
 .rules a:hover { text-decoration: underline; }
 
+/* Reader */
+
+body.reader-open { overflow: hidden; }
+
+.reader {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+.reader-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  padding: 10px 14px;
+  padding-top: calc(10px + env(safe-area-inset-top, 0px));
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.reader-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-weight: 600;
+}
+.reader-count {
+  flex: none;
+  margin-right: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.reader-btn {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.reader-btn:hover { color: var(--text); background: var(--hover); }
+
+.reader-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  background: var(--hover);
+}
+.reader-pg {
+  flex: none;
+  max-width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  overflow: hidden;
+}
+.reader-status {
+  margin: 48px 16px;
+  color: var(--muted);
+  text-align: center;
+}
+
 @media (max-width: 600px) {
   .wrap { padding: 0 16px; }
   html { scroll-padding-top: 160px; }
@@ -525,4 +606,8 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outlin
   .guide { padding: 4px 14px 14px; }
   .routine li { flex-direction: column; gap: 2px; }
   .slot-time { width: auto; }
+  .reader-bar { padding: 8px 10px; padding-top: calc(8px + env(safe-area-inset-top, 0px)); }
+  .reader-title { font-size: 14px; }
+  .reader-count { display: none; }
+  .reader-stage { padding: 10px; gap: 10px; }
 }

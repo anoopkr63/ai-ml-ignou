@@ -29,6 +29,8 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "/" && document.activeElement !== input) {
     e.preventDefault();
     input.focus();
+  } else if (document.body.classList.contains("reader-open")) {
+    // the reader handles its own keys
   } else if (e.key === "p" && document.activeElement !== input && !e.ctrlKey && !e.metaKey && !e.altKey) {
     const plan = document.querySelector(".plan-key");
     if (plan) location.href = plan.href;
