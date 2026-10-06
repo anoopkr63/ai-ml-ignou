@@ -169,6 +169,13 @@ svg { width: 18px; height: 18px; flex: none; }
   letter-spacing: -0.01em;
 }
 
+.papers-sem {
+  margin: 28px 0 14px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
 .course {
   margin-bottom: 20px;
   border: 1px solid var(--border);

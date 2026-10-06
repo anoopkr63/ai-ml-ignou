@@ -94,35 +94,43 @@ const sessionKey = (name) => {
   return +m[2] * 10 + (/^dec/i.test(m[1]) ? 2 : 1);
 };
 
+function readPaperCourse(semDir, dir) {
+  const m = dir.match(/^(\S+)\s+(.*)$/);
+  const items = list(join(ROOT, PAPERS, semDir, dir))
+    .filter((f) => f.toLowerCase().endsWith(".pdf"))
+    .map((f) => {
+      const parts = [PAPERS, semDir, dir, f];
+      const name = f.replace(/\.pdf$/i, "");
+      return {
+        sort: sessionKey(name),
+        label: "",
+        title: name.replace(/^\S+\s+/, ""),
+        href: href(parts),
+        size: formatSize(statSync(join(ROOT, ...parts)).size),
+      };
+    })
+    .sort((a, b) => b.sort - a.sort || byName(a.title, b.title));
+  return {
+    id: `pyq-${m[1].toLowerCase()}`,
+    code: m[1],
+    title: m[2],
+    groups: items.length ? [{ items }] : [],
+    count: items.length,
+  };
+}
+
 function readPapers() {
   if (!existsSync(join(ROOT, PAPERS))) return [];
   return list(join(ROOT, PAPERS))
-    .filter((d) => isDir(join(ROOT, PAPERS, d)))
-    .map((d) => {
-      const m = d.match(/^(\S+)\s+(.*)$/);
-      const items = list(join(ROOT, PAPERS, d))
-        .filter((f) => f.toLowerCase().endsWith(".pdf"))
-        .map((f) => {
-          const parts = [PAPERS, d, f];
-          const name = f.replace(/\.pdf$/i, "");
-          return {
-            sort: sessionKey(name),
-            label: "",
-            title: name.replace(/^\S+\s+/, ""),
-            href: href(parts),
-            size: formatSize(statSync(join(ROOT, ...parts)).size),
-          };
-        })
-        .sort((a, b) => b.sort - a.sort || byName(a.title, b.title));
-      return {
-        id: `pyq-${m[1].toLowerCase()}`,
-        code: m[1],
-        title: m[2],
-        groups: items.length ? [{ items }] : [],
-        count: items.length,
-      };
-    })
-    .filter((c) => c.count);
+    .filter((d) => /^Semester-/.test(d) && isDir(join(ROOT, PAPERS, d)))
+    .map((d) => ({
+      name: d.replace("-", " "),
+      courses: list(join(ROOT, PAPERS, d))
+        .filter((e) => isDir(join(ROOT, PAPERS, d, e)))
+        .map((e) => readPaperCourse(d, e))
+        .filter((c) => c.count),
+    }))
+    .filter((s) => s.courses.length);
 }
 
 const papers = readPapers();
@@ -242,14 +250,19 @@ const papersBody = !papers.length
   : `
   <section class="panel papers" id="past-papers">
     <h2>Previous year questions</h2>
-    ${papers.map(renderCourse).join("\n")}
+${papers
+  .map(
+    (s) => `    <h3 class="papers-sem">${esc(s.name)}</h3>
+${s.courses.map(renderCourse).join("\n")}`,
+  )
+  .join("\n")}
   </section>`;
 
 const nav = [
   ...semesters.map((s) => `<a class="tab" href="#${s.id}">${esc(s.name)}</a>`),
   ...(papers.length ? [`<a class="tab" href="#past-papers">Past papers</a>`] : []),
 ].join("");
-const paperFiles = papers.reduce((n, c) => n + c.count, 0);
+const paperFiles = papers.reduce((n, s) => n + s.courses.reduce((m, c) => m + c.count, 0), 0);
 const totalFiles =
   semesters.reduce((n, s) => n + s.courses.reduce((m, c) => m + c.count, 0) + s.assignments.length, 0) + paperFiles;
 
