@@ -52,6 +52,23 @@ if (remembered) {
 function start() {
   const KEY = "plan-progress";
 
+  // The nav acts as tabs: one section is shown at a time.
+  const tabs = [...vault.querySelectorAll(".plan-nav .tab")];
+  const panels = [...vault.querySelectorAll(".panel")];
+  const show = (id) => {
+    const panel = panels.find((p) => p.id === id) ?? panels.find((p) => p.id === "timeline") ?? panels[0];
+    for (const p of panels) p.classList.toggle("active", p === panel);
+    for (const t of tabs) {
+      if (t.hash === `#${panel.id}`) t.setAttribute("aria-current", "page");
+      else t.removeAttribute("aria-current");
+    }
+  };
+  show(location.hash.slice(1));
+  window.addEventListener("hashchange", () => {
+    show(location.hash.slice(1));
+    document.querySelector(".plan-nav").scrollIntoView({ block: "start" });
+  });
+
   let done = {};
   try { done = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch {}
 
@@ -113,11 +130,9 @@ function start() {
   if (current) {
     current.classList.add("today");
     current.querySelector(".day-when").insertAdjacentHTML("afterend", '<span class="today-flag">Today</span>');
-    // Everything ships collapsed, so today is the one branch opened for you.
-    for (const el of [current, current.closest(".week"), current.closest(".phase")]) if (el) el.open = true;
     const week = current.closest(".week");
     if (week) week.querySelector(".week-label").insertAdjacentHTML("afterend", '<span class="week-now">This week</span>');
-    if (!location.hash) current.scrollIntoView({ block: "center" });
+    // Everything starts collapsed, so today is flagged where it sits, not opened.
   }
 
   // One control for the whole timeline: phases, weeks and days together.

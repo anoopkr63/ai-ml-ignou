@@ -339,8 +339,28 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outlin
 .countdown-near { color: var(--accent); background: var(--accent-soft); }
 .countdown-past { opacity: 0.55; }
 
+.plan-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-top: 22px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  font-size: 14px;
+}
+.plan-nav a { color: var(--muted); border-bottom: 1px solid transparent; padding-bottom: 2px; }
+.plan-nav a:hover { color: var(--text); border-bottom-color: var(--border); }
+.plan-nav a[aria-current="page"] { color: var(--text); border-bottom-color: var(--accent); }
+
 .plan-block { padding-top: 40px; }
-.plan-block > h2, .phase-head h2 { margin: 0; font-size: 22px; letter-spacing: -0.01em; }
+.plan-sub {
+  margin: 26px 0 0;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+}
+.plan-block > .plan-sub:first-of-type { margin-top: 14px; }
+.plan-block > h2 { margin: 0; font-size: 22px; letter-spacing: -0.01em; }
+.phase-head h2 { margin: 0; font-size: 17px; letter-spacing: -0.01em; }
 .plan-note { max-width: 70ch; margin: 10px 0 0; color: var(--muted); font-size: 14px; }
 .plan-block .course { margin-top: 12px; margin-bottom: 0; }
 
@@ -364,7 +384,7 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outlin
 .exam-code { white-space: nowrap; color: var(--accent); font-weight: 600; }
 .exam-sess { white-space: nowrap; color: var(--muted); }
 
-.phase { padding-top: 44px; }
+.phase { padding-top: 32px; }
 .phase-head {
   display: flex;
   align-items: baseline;

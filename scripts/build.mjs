@@ -170,6 +170,28 @@ function readGuides() {
 const guideDirs = new Set();
 const guides = readGuides();
 
+const PREP = "Exam Preparation";
+
+// Solved question banks. Private, like the plan: they are only linked from inside the
+// encrypted plan body and only copied into dist when the plan is built.
+function readPrep() {
+  if (!existsSync(join(ROOT, PREP))) return [];
+  return list(join(ROOT, PREP))
+    .filter((f) => f.toLowerCase().endsWith(".pdf"))
+    .map((f) => {
+      const parts = [PREP, f];
+      const m = f.replace(/\.pdf$/i, "").match(/^(\S+)\s+(.*)$/);
+      return {
+        label: m[1],
+        title: m[2],
+        href: href(parts),
+        size: formatSize(statSync(join(ROOT, ...parts)).size),
+      };
+    });
+}
+
+const prep = readPrep();
+
 const semesters = list(ROOT)
   .filter((d) => /^Semester-/.test(d) && isDir(join(ROOT, d)))
   .map((d) => {
@@ -334,8 +356,8 @@ const renderPhase = (p) => `
     </details>`;
 
 const renderExams = () => `
-    <section class="plan-block" id="calendar">
-      <h2>Exam calendar</h2>
+    <section class="plan-block panel" id="calendar">
+      <h2>Exam dates</h2>
       <div class="table-scroll">
         <table class="exam-table">
           <thead><tr><th>Date</th><th>Course</th><th>Title</th><th>Session</th></tr></thead>
@@ -377,6 +399,16 @@ const renderCourseGuide = (c) => `
         </div>
       </details>`;
 
+const renderPrep = () => `
+      <h3 class="plan-sub">Solved past questions</h3>
+      <p class="plan-note">Every question from the previous papers, with worked answers.</p>
+      <div class="course">
+        <div class="group">
+          <ul>${prep.map(renderItem).join("")}
+          </ul>
+        </div>
+      </div>`;
+
 const renderGuideCourse = ([code, items]) => `
       <details class="course">
         <summary class="course-head">
@@ -400,6 +432,11 @@ const renderGuideCourse = ([code, items]) => `
         </div>
       </details>`;
 
+const renderGuides = () => `
+      <h3 class="plan-sub">Block study guides</h3>
+      <p class="plan-note">One guide per block, per course.</p>
+${[...guides].map(renderGuideCourse).join("\n")}`;
+
 const renderPyq = (q) => `
       <details class="course">
         <summary class="course-head">
@@ -416,6 +453,17 @@ const renderPyq = (q) => `
         </div>
       </details>`;
 
+const planNav = [
+  ["#calendar", "Exam dates"],
+  ["#timeline", "Day-by-day plan"],
+  ["#courses", "What to study"],
+  ["#papers", "What papers ask"],
+  ...(prep.length || guides.size ? [["#material", "Download"]] : []),
+  ["#sources", "Sources"],
+]
+  .map(([h, t]) => `<a class="tab" href="${h}">${t}</a>`)
+  .join("");
+
 const planBody = !plan
   ? null
   : `
@@ -428,26 +476,33 @@ const planBody = !plan
         <button class="toggle-all expand" type="button">Expand all</button>
         <button class="toggle-all reset" type="button">Reset progress</button>
       </div>
+      <nav class="plan-nav">${planNav}</nav>
     </section>
 ${renderExams()}
+    <section class="plan-block panel active" id="timeline">
+      <h2>Day-by-day plan</h2>
+      <p class="plan-note">Four phases, split into weeks and days. Today's block opens by itself; tick a task to record it on this device.</p>
 ${plan.phases.map(renderPhase).join("\n")}
+    </section>
+    <section class="plan-block panel" id="courses">
+      <h2>What to study, and what to skim</h2>
+      <p class="plan-note">Per course: the topics worth the most marks, and how the blocks map to the paper.</p>
+${plan.courses.map(renderCourseGuide).join("\n")}
+    </section>
+    <section class="plan-block panel" id="papers">
+      <h2>What the past papers ask</h2>
+      <p class="plan-note">Topic frequency across previous term-end papers, by course.</p>
+${plan.pyq.map(renderPyq).join("\n")}
+    </section>
 ${
-      guides.size
-        ? `    <section class="plan-block" id="guides">
-      <h2>Study guides</h2>
-${[...guides].map(renderGuideCourse).join("\n")}
+      prep.length || guides.size
+        ? `    <section class="plan-block panel" id="material">
+      <h2>Download</h2>
+${prep.length ? renderPrep() : ""}${guides.size ? renderGuides() : ""}
     </section>`
         : ""
     }
-    <section class="plan-block" id="courses">
-      <h2>What to study, and what to skim</h2>
-${plan.courses.map(renderCourseGuide).join("\n")}
-    </section>
-    <section class="plan-block" id="papers">
-      <h2>Past papers</h2>
-${plan.pyq.map(renderPyq).join("\n")}
-    </section>
-    <section class="plan-block" id="sources">
+    <section class="plan-block panel" id="sources">
       <h2>Sources</h2>
       <ul class="rules">${plan.sources
         .map((s) => `<li><a href="${s.href}" target="_blank" rel="noopener">${esc(s.text)}</a></li>`)
@@ -503,6 +558,7 @@ for (const s of semesters) {
 }
 if (planHtml) {
   for (const d of guideDirs) cpSync(join(ROOT, GUIDES, d), join(OUT, GUIDES, d), { recursive: true });
+  if (prep.length) cpSync(join(ROOT, PREP), join(OUT, PREP), { recursive: true });
 }
 
 const planTasks = (plan?.phases ?? []).reduce((n, p) => n + p.blocks.reduce((m, b) => m + b.tasks.length, 0), 0);
