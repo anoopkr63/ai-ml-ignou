@@ -27,7 +27,7 @@ async function unlock(passphrase) {
   vault.hidden = false;
   form.closest(".plan-intro").hidden = true;
   try { sessionStorage.setItem("plan-pass", passphrase); } catch {}
-  start();
+  start(passphrase);
 }
 
 form.addEventListener("submit", async (e) => {
@@ -104,14 +104,80 @@ function start() {
 
   for (const box of boxes) {
     box.addEventListener("change", () => {
-      if (box.checked) done[box.id] = true;
-      else delete done[box.id];
-      try { localStorage.setItem(KEY, JSON.stringify(done)); } catch {}
+      state[box.id] = { v: box.checked ? 1 : 0, t: Date.now() };
+      save();
       draw();
+      push();
     });
   }
 
   draw();
+
+  /* Progress follows the passphrase, so the same plan opened on another device
+     picks up where this one left off. Without the sync endpoint the plan still
+     works, it just stays on this device. */
+  const status = vault.querySelector(".sync");
+  const say = (text) => { if (status) status.textContent = text; };
+
+  let syncKey = null;
+  let pushing = 0;
+
+  const hashKey = async () => {
+    const data = new TextEncoder().encode(`${passphrase}:plan-progress`);
+    const digest = await crypto.subtle.digest("SHA-256", data);
+    return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+  };
+
+  const pull = async () => {
+    if (!syncKey) return;
+    const res = await fetch(`/api/progress?key=${syncKey}`);
+    if (!res.ok) throw new Error(res.status);
+    const remote = (await res.json()).state ?? {};
+    const merged = merge(state, remote);
+    const changed = JSON.stringify(merged) !== JSON.stringify(state);
+    state = merged;
+    if (changed) {
+      apply();
+      save();
+      draw();
+    }
+    say("Synced");
+    return changed;
+  };
+
+  const send = async () => {
+    const res = await fetch("/api/progress", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key: syncKey, state }),
+    });
+    if (!res.ok) throw new Error(res.status);
+    say("Synced");
+  };
+
+  const push = () => {
+    if (!syncKey) return;
+    clearTimeout(pushing);
+    say("Saving…");
+    pushing = setTimeout(() => {
+      send().catch(() => say("Saved on this device"));
+    }, 1200);
+  };
+
+  (async () => {
+    try {
+      syncKey = await hashKey();
+      await pull();
+      await send();
+    } catch {
+      syncKey = null;
+      say("Saved on this device");
+    }
+  })();
+
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) pull().catch(() => say("Saved on this device"));
+  });
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -164,9 +230,11 @@ function start() {
     }
     clearTimeout(arming);
     arming = 0;
-    done = {};
-    try { localStorage.removeItem(KEY); } catch {}
+    const now = Date.now();
+    for (const id of Object.keys(state)) state[id] = { v: 0, t: now };
+    save();
     for (const box of boxes) box.checked = false;
+    push();
     reset.textContent = "Reset progress";
     reset.classList.remove("reset-armed");
     draw();

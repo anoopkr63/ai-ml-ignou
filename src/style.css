@@ -339,6 +339,8 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outlin
 .countdown-near { color: var(--accent); background: var(--accent-soft); }
 .countdown-past { opacity: 0.55; }
 
+.sync { flex: none; color: var(--muted); font-size: 12px; }
+
 .plan-nav {
   display: flex;
   flex-wrap: wrap;

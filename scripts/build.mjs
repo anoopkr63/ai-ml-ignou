@@ -475,6 +475,7 @@ const planBody = !plan
         <span class="bar-count"></span>
         <button class="toggle-all expand" type="button">Expand all</button>
         <button class="toggle-all reset" type="button">Reset progress</button>
+        <span class="sync" aria-live="polite"></span>
       </div>
       <nav class="plan-nav">${planNav}</nav>
     </section>
