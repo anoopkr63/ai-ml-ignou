@@ -2,8 +2,10 @@
 // passphrase, computed in the browser, so no account and no login are needed and
 // the passphrase itself never leaves the device.
 
-const URL_BASE = process.env.UPSTASH_REDIS_REST_URL;
-const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
+// Vercel's Upstash integration sets KV_REST_API_*; a database added directly on
+// Upstash sets UPSTASH_REDIS_REST_*. Either is fine.
+const URL_BASE = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+const TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
 const MAX_BYTES = 64 * 1024;
 const TTL_DAYS = 400;
 
