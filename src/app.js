@@ -1,10 +1,16 @@
 const input = document.querySelector(".search input");
 const empty = document.querySelector(".empty");
+const toggleAll = document.querySelector(".toggle-all");
 
-input.addEventListener("input", () => {
-  const q = input.value.trim().toLowerCase();
-  let any = false;
-  for (const course of document.querySelectorAll(".course")) {
+const tabs = [...document.querySelectorAll(".tabs .tab")];
+const panels = [...document.querySelectorAll(".panel")];
+const current = () => panels.find((p) => p.classList.contains("active")) ?? panels[0];
+
+// Hides everything in one panel that does not match the query, and reports how
+// many of its courses survived.
+const match = (panel, q) => {
+  let visible = 0;
+  for (const course of panel.querySelectorAll(".course")) {
     const courseHit = !q || course.dataset.search.includes(q);
     let shown = 0;
     for (const item of course.querySelectorAll(".item")) {
@@ -17,13 +23,51 @@ input.addEventListener("input", () => {
     }
     course.hidden = shown === 0;
     if (q && shown) course.open = true;
-    if (shown) any = true;
+    if (shown) visible++;
   }
-  for (const sem of document.querySelectorAll(".semester")) {
-    sem.hidden = !sem.querySelector(".course:not([hidden])");
+  return visible;
+};
+
+const select = (panel) => {
+  for (const p of panels) p.classList.toggle("active", p === panel);
+  for (const t of tabs) {
+    if (t.hash === `#${panel.id}`) t.setAttribute("aria-current", "page");
+    else t.removeAttribute("aria-current");
   }
-  empty.hidden = any;
-});
+};
+
+const syncToggle = () => {
+  toggleAll.textContent = [...current().querySelectorAll(".course")].some((c) => c.open)
+    ? "Collapse all"
+    : "Expand all";
+};
+
+const filter = () => {
+  const q = input.value.trim().toLowerCase();
+  const counts = new Map(panels.map((p) => [p, match(p, q)]));
+  let panel = current();
+  // A search that only matches another tab jumps to it rather than showing nothing.
+  if (q && !counts.get(panel)) {
+    const hit = panels.find((p) => counts.get(p));
+    if (hit) {
+      panel = hit;
+      history.replaceState(null, "", `#${panel.id}`);
+    }
+  }
+  select(panel);
+  empty.hidden = !!counts.get(panel);
+  syncToggle();
+};
+
+const show = (id) => {
+  select(panels.find((p) => p.id === id) ?? panels[0]);
+  filter();
+};
+
+show(location.hash.slice(1));
+window.addEventListener("hashchange", () => show(location.hash.slice(1)));
+
+input.addEventListener("input", filter);
 
 document.addEventListener("keydown", (e) => {
   if (e.key === "/" && document.activeElement !== input) {
@@ -36,18 +80,13 @@ document.addEventListener("keydown", (e) => {
     if (plan) location.href = plan.href;
   } else if (e.key === "Escape" && document.activeElement === input) {
     input.value = "";
-    input.dispatchEvent(new Event("input"));
+    filter();
     input.blur();
   }
 });
 
-const toggleAll = document.querySelector(".toggle-all");
-const courses = [...document.querySelectorAll(".course")];
-const syncToggle = () => {
-  toggleAll.textContent = courses.some((c) => c.open) ? "Collapse all" : "Expand all";
-};
-
 toggleAll.addEventListener("click", () => {
+  const courses = [...current().querySelectorAll(".course")];
   const open = !courses.some((c) => c.open);
   for (const c of courses) c.open = open;
   syncToggle();

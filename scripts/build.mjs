@@ -85,6 +85,48 @@ function readAssignments(semDir) {
     .map((f) => ({ ...toItem([semDir, "Assignments", f]), code: f.split(" ")[0] }));
 }
 
+const PAPERS = "Previous Year Questions";
+
+// Term-end papers, one folder per course, named by the session printed inside the PDF.
+const sessionKey = (name) => {
+  const m = name.match(/(June|December)\s+(\d{4})/i);
+  if (!m) return 0;
+  return +m[2] * 10 + (/^dec/i.test(m[1]) ? 2 : 1);
+};
+
+function readPapers() {
+  if (!existsSync(join(ROOT, PAPERS))) return [];
+  return list(join(ROOT, PAPERS))
+    .filter((d) => isDir(join(ROOT, PAPERS, d)))
+    .map((d) => {
+      const m = d.match(/^(\S+)\s+(.*)$/);
+      const items = list(join(ROOT, PAPERS, d))
+        .filter((f) => f.toLowerCase().endsWith(".pdf"))
+        .map((f) => {
+          const parts = [PAPERS, d, f];
+          const name = f.replace(/\.pdf$/i, "");
+          return {
+            sort: sessionKey(name),
+            label: "",
+            title: name.replace(/^\S+\s+/, ""),
+            href: href(parts),
+            size: formatSize(statSync(join(ROOT, ...parts)).size),
+          };
+        })
+        .sort((a, b) => b.sort - a.sort || byName(a.title, b.title));
+      return {
+        id: `pyq-${m[1].toLowerCase()}`,
+        code: m[1],
+        title: m[2],
+        groups: items.length ? [{ items }] : [],
+        count: items.length,
+      };
+    })
+    .filter((c) => c.count);
+}
+
+const papers = readPapers();
+
 const GUIDES = "Study Guides";
 
 // Bilingual study guides, one per block, keyed by course code for the plan page.
@@ -151,7 +193,7 @@ const renderItem = (i) => `
         </li>`;
 
 const renderCourse = (c) => `
-    <details class="course" id="${esc(c.code.toLowerCase())}" data-search="${esc(`${c.code} ${c.title}`.toLowerCase())}">
+    <details class="course" id="${esc(c.id ?? c.code.toLowerCase())}" data-search="${esc(`${c.code} ${c.title}`.toLowerCase())}">
       <summary class="course-head">
         <span class="course-code">${esc(c.code)}</span>
         <h3>${esc(c.title)}</h3>
@@ -186,8 +228,8 @@ const renderAssignments = (items) => `
 
 const body = semesters
   .map(
-    (s) => `
-  <section class="semester" id="${s.id}">
+    (s, i) => `
+  <section class="panel semester${i === 0 ? " active" : ""}" id="${s.id}">
     <h2>${esc(s.name)}</h2>
     ${s.courses.map(renderCourse).join("\n")}
     ${s.assignments.length ? renderAssignments(s.assignments) : ""}
@@ -195,11 +237,21 @@ const body = semesters
   )
   .join("\n");
 
-const nav = semesters.map((s) => `<a href="#${s.id}">${esc(s.name)}</a>`).join("");
-const totalFiles = semesters.reduce(
-  (n, s) => n + s.courses.reduce((m, c) => m + c.count, 0) + s.assignments.length,
-  0,
-);
+const papersBody = !papers.length
+  ? ""
+  : `
+  <section class="panel papers" id="past-papers">
+    <h2>Previous year questions</h2>
+    ${papers.map(renderCourse).join("\n")}
+  </section>`;
+
+const nav = [
+  ...semesters.map((s) => `<a class="tab" href="#${s.id}">${esc(s.name)}</a>`),
+  ...(papers.length ? [`<a class="tab" href="#past-papers">Past papers</a>`] : []),
+].join("");
+const paperFiles = papers.reduce((n, c) => n + c.count, 0);
+const totalFiles =
+  semesters.reduce((n, s) => n + s.courses.reduce((m, c) => m + c.count, 0) + s.assignments.length, 0) + paperFiles;
 
 
 /* Study plan page */
@@ -419,7 +471,7 @@ const planHtml =
 const html = readFileSync(join(ROOT, "src/index.html"), "utf8")
   .replace("{{PLANLINK}}", planHtml ? planLink : "")
   .replace("{{NAV}}", nav)
-  .replace("{{CONTENT}}", body);
+  .replace("{{CONTENT}}", body + papersBody);
 
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT);
@@ -432,6 +484,7 @@ cpSync(join(ROOT, "src/style.css"), join(OUT, "style.css"));
 cpSync(join(ROOT, "src/app.js"), join(OUT, "app.js"));
 cpSync(join(ROOT, "src/theme.js"), join(OUT, "theme.js"));
 cpSync(join(ROOT, "src/reader.js"), join(OUT, "reader.js"));
+if (papers.length) cpSync(join(ROOT, PAPERS), join(OUT, PAPERS), { recursive: true, filter: (src) => !/\.md$/i.test(src) });
 for (const s of semesters) {
   cpSync(join(ROOT, s.dir), join(OUT, s.dir), { recursive: true, filter: (src) => !/[\\/]Solutions$/.test(src) });
 }
