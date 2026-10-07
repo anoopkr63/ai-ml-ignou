@@ -49,7 +49,7 @@ if (remembered) {
   });
 }
 
-function start() {
+function start(passphrase) {
   const KEY = "plan-progress";
 
   // The nav acts as tabs: one section is shown at a time.
@@ -69,11 +69,39 @@ function start() {
     document.querySelector(".plan-nav").scrollIntoView({ block: "start" });
   });
 
-  let done = {};
-  try { done = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch {}
+  /* A tick is stored as { v, t }: the value and when it was set, so two devices can be
+     merged by keeping whichever was ticked last. */
+  const load = () => {
+    const out = {};
+    let raw = {};
+    try { raw = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch {}
+    for (const [id, value] of Object.entries(raw)) {
+      if (value && typeof value === "object") out[id] = { v: value.v ? 1 : 0, t: +value.t || 0 };
+      else if (value) out[id] = { v: 1, t: 0 }; // the older format, which stored id: true
+    }
+    return out;
+  };
+
+  const merge = (a, b) => {
+    const out = { ...a };
+    for (const [id, theirs] of Object.entries(b)) {
+      const mine = out[id];
+      if (!mine || theirs.t > mine.t || (theirs.t === mine.t && theirs.v)) out[id] = theirs;
+    }
+    return out;
+  };
+
+  let state = load();
+
+  const save = () => {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {}
+  };
 
   const boxes = [...vault.querySelectorAll(".task input")];
-  for (const box of boxes) box.checked = Boolean(done[box.id]);
+  const apply = () => {
+    for (const box of boxes) box.checked = Boolean(state[box.id]?.v);
+  };
+  apply();
 
   const pct = (n, total) => (total ? Math.round((n / total) * 100) : 0);
 
@@ -179,6 +207,16 @@ function start() {
     if (!document.hidden) pull().catch(() => say("Saved on this device"));
   });
 
+  /* The topic in a day header links to that day's material. The header is a <summary>, so
+     the click has to be taken over or the day would toggle at the same time. */
+  vault.addEventListener("click", (e) => {
+    const link = e.target.closest(".day-what a");
+    if (!link) return;
+    e.preventDefault();
+    e.stopPropagation();
+    window.open(link.href, "_blank", "noopener");
+  });
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const days = (iso) => Math.ceil((new Date(`${iso}T00:00:00`) - today) / 86400000);
@@ -231,7 +269,7 @@ function start() {
     clearTimeout(arming);
     arming = 0;
     const now = Date.now();
-    for (const id of Object.keys(state)) state[id] = { v: 0, t: now };
+    for (const box of boxes) state[box.id] = { v: 0, t: now };
     save();
     for (const box of boxes) box.checked = false;
     push();

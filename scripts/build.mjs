@@ -207,8 +207,75 @@ const semesters = list(ROOT)
 
 const courseTitles = new Map(semesters.flatMap((s) => s.courses.map((c) => [c.code, c.title])));
 
+/* A day in the plan names its material as "MCS-061 · Unit 1", "MCS-208 · Block 3" or
+   "MCS-061 · timed paper". Unit numbers run on across blocks, so that text resolves to the
+   PDFs already scanned above and the topic in the day header can open them. */
+const materialByCode = new Map();
+for (const s of semesters) {
+  for (const c of s.courses) {
+    const units = new Map();
+    const blocks = new Map();
+    for (const g of c.groups) {
+      const b = g.heading?.match(/^Block (\d+)/);
+      const own = [];
+      for (const i of g.items) {
+        const u = i.label.match(/^Unit (\d+)$/);
+        if (u) units.set(+u[1], i);
+        if (u || /^Section \d+$/.test(i.label)) own.push(i);
+      }
+      if (b) blocks.set(+b[1], own);
+    }
+    materialByCode.set(c.code, { units, blocks });
+  }
+}
+
+const papersByCode = new Map(papers.flatMap((s) => s.courses.map((c) => [c.code, c.groups[0].items])));
+const prepByCode = new Map(prep.map((p) => [p.label, p]));
+
+const MAX_DAY_LINKS = 4;
+
+function dayLinks(b) {
+  const m = String(b.dates).match(/^(\S+)\s*·\s*(.+)$/);
+  if (!m) return [];
+  const [, code, what] = m;
+  if (b.exam) return []; // an exam day has nothing to open
+
+  const material = materialByCode.get(code);
+  const span = (word) => what.match(new RegExp(`${word}s?\\s+(\\d+)(?:\\s*[–-]\\s*(\\d+))?`, "i"));
+  const range = (hit) => {
+    const from = +hit[1];
+    const to = hit[2] ? +hit[2] : from;
+    return Array.from({ length: to - from + 1 }, (_, k) => from + k);
+  };
+  const fallback = () => {
+    const bank = prepByCode.get(code);
+    if (bank) return [{ label: "Question bank", title: bank.title, href: bank.href }];
+    return materialByCode.has(code) ? [{ label: what, title: courseTitles.get(code), href: `/#${code.toLowerCase()}` }] : [];
+  };
+
+  let hit;
+  if (material && (hit = span("unit"))) {
+    const found = range(hit).map((n) => material.units.get(n)).filter(Boolean);
+    if (found.length) return found.slice(0, MAX_DAY_LINKS);
+  }
+  if (material && (hit = span("block"))) {
+    const nums = range(hit);
+    if (nums.length === 1) {
+      const found = material.blocks.get(nums[0]) ?? [];
+      if (found.length) return found.slice(0, MAX_DAY_LINKS);
+    }
+    return fallback();
+  }
+  if (/timed paper/i.test(what)) {
+    const found = (papersByCode.get(code) ?? []).slice(0, 2);
+    if (found.length) return found.map((p) => ({ label: p.title, title: p.title, href: p.href }));
+  }
+  return fallback();
+}
+
 const pdfIcon = `<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 2.5h6.5L15.5 6.5V17a.5.5 0 0 1-.5.5H5a.5.5 0 0 1-.5-.5V3a.5.5 0 0 1 .5-.5Z" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M11.5 2.5v4h4" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>`;
 const dlIcon = `<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3.5v9m0 0-3.5-3.5M10 12.5l3.5-3.5M4 16h12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const outIcon = `<svg class="out" viewBox="0 0 20 20" aria-hidden="true"><path d="M11 5h4v4M14.5 5.5 9 11" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M13 12v2.5a.5.5 0 0 1-.5.5h-7a.5.5 0 0 1-.5-.5v-7a.5.5 0 0 1 .5-.5H8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const chevron = `<svg class="chevron" viewBox="0 0 20 20" aria-hidden="true"><path d="m6 8 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
 const renderItem = (i) => `
@@ -309,11 +376,21 @@ const renderTask = (t) => `
               <label for="${esc(t.id)}">${esc(t.text)}${t.note ? `<span class="task-note">${esc(t.note)}</span>` : ""}</label>
             </li>`;
 
+const dayTopic = (b) => {
+  const links = dayLinks(b);
+  if (!links.length) return `<span class="day-what">${esc(b.dates)}</span>`;
+  const anchor = (l, text) =>
+    `<a class="day-link" href="${l.href}" target="_blank" rel="noopener" title="Open ${esc(l.title || text)}">${esc(text)}${outIcon}</a>`;
+  if (links.length === 1) return `<span class="day-what">${anchor(links[0], b.dates)}</span>`;
+  const prefix = String(b.dates).split("·")[0].trim();
+  return `<span class="day-what">${esc(prefix)} · ${links.map((l) => anchor(l, l.label)).join("")}</span>`;
+};
+
 const renderDay = (b) => `
         <details class="day${b.exam ? " day-exam" : ""}" data-start="${b.start}" data-end="${b.end}">
           <summary class="day-head">
             <span class="day-when">${esc(b.label)}</span>
-            <span class="day-what">${esc(b.dates)}</span>
+            ${dayTopic(b)}
             <span class="day-count"></span>
             ${chevron}
           </summary>
