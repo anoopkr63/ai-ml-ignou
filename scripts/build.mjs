@@ -559,7 +559,7 @@ const planBody = !plan
 ${renderExams()}
     <section class="plan-block panel active" id="timeline">
       <h2>Day-by-day plan</h2>
-      <p class="plan-note">Four phases, split into weeks and days. Today's block opens by itself; tick a task to record it on this device.</p>
+      <p class="plan-note">Three phases, split into weeks and days; today's day is flagged where it sits. Subjects alternate from day to day, so no course goes quiet for long. Tap a day's topic to open its PDF, and tick a task to record it — progress follows your passphrase, not the device.</p>
 ${plan.phases.map(renderPhase).join("\n")}
     </section>
     <section class="plan-block panel" id="courses">
